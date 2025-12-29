@@ -19,7 +19,7 @@ st.markdown("""
     div[data-baseweb="tab"] { color: #8b949e; }
     div[data-baseweb="tab"][aria-selected="true"] { color: #ffffff; border-bottom-color: #ffffff; }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True) # Buradaki hata düzeltildi: unsafe_allow_html=True
 
 # Application Header
 st.title("Paper Pixel Studio")
@@ -80,7 +80,7 @@ with tab_app:
                         response = requests.get(api_url, timeout=40)
                         
                         # Check if response is actually an image
-                        if response.status_code == 200 and response.headers.get('content-type', '').startswith('image'):
+                        if response.status_code == 200 and 'image' in response.headers.get('content-type', ''):
                             image_data = response.content
                             break
                     except Exception:
@@ -96,11 +96,9 @@ with tab_app:
                         # Clean Preview
                         st.image(output_img, caption=f"Result: {prompt}", width=300)
                         
-                        # TODO: Future implementation for Upscaling and Sheet Layout
-                        
                     except Exception as e:
                         st.error(f"Post-processing error for: {prompt}")
                 else:
                     st.error(f"Generation failed after multiple attempts: {prompt}")
 
-            status_box.success("Batch processing complete. Packaging features pending in next update.")
+            status_box.success("Batch processing complete.")
