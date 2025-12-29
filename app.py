@@ -4,6 +4,8 @@ from rembg import remove
 from PIL import Image
 import io
 import time
+import random
+from urllib.parse import quote
 
 # Page Configuration
 st.set_page_config(page_title="Paper Pixel | Sticker Factory", layout="wide", initial_sidebar_state="collapsed")
@@ -19,42 +21,26 @@ st.markdown("""
     div[data-baseweb="tab"] { color: #8b949e; }
     div[data-baseweb="tab"][aria-selected="true"] { color: #ffffff; border-bottom-color: #ffffff; }
     </style>
-    """, unsafe_allow_html=True) # Buradaki hata düzeltildi: unsafe_allow_html=True
+    """, unsafe_allow_html=True)
 
 # Application Header
 st.title("Paper Pixel Studio")
 st.subheader("Sticker Factory")
 
-# Top Navigation Tabs
 tab_app, tab_guide, tab_support = st.tabs(["Sticker Factory", "User Guide", "Support"])
 
 with tab_guide:
-    st.markdown("""
-    ### Workflow
-    1. Enter your prompts line by line.
-    2. Select your target platform and layout.
-    3. Click generate and wait for the automated process.
-    """)
+    st.markdown("### Workflow\n1. Enter prompts line by line.\n2. Select platform/layout.\n3. Generate and wait.")
 
 with tab_support:
-    st.markdown("""
-    ### Support the Project
-    This is a free-to-use professional tool. If it adds value to your business, consider supporting our development.
-    """)
+    st.markdown("### Support the Project\nThis is a free-to-use professional tool for POD sellers.")
 
 with tab_app:
-    # Input Section
-    prompts_text = st.text_area("Enter Prompts (One per line):", placeholder="Example:\nCute neon cat\nVintage forest landscape", height=200)
+    prompts_text = st.text_area("Enter Prompts (One per line):", placeholder="Example:\nCute crocodile drinking cola\nCyberpunk owl", height=200)
     
     col_plat, col_lay = st.columns(2)
     with col_plat:
-        platform = st.selectbox("Target Platform", [
-            "Redbubble (4500x5400)", 
-            "Amazon Merch on Demand (4500x5400)", 
-            "Etsy (3000x3000)", 
-            "Manual"
-        ])
-    
+        platform = st.selectbox("Target Platform", ["Redbubble (4500x5400)", "Amazon Merch (4500x5400)", "Etsy (3000x3000)", "Manual"])
     with col_lay:
         layout_choice = st.selectbox("Layout Selection", ["1x", "2x", "4x", "6x", "12x (A4)"])
 
@@ -66,39 +52,36 @@ with tab_app:
             status_box = st.empty()
             
             for i, prompt in enumerate(prompts):
-                status_box.info(f"Processing {i+1}/{len(prompts)}: {prompt}")
-                
-                # Robust Generation Logic (Inatçı Döngü)
                 image_data = None
-                retries = 10
+                retries = 15  # İnatçılık dozunu artırdık
+                
                 for attempt in range(retries):
+                    status_box.info(f"Processing {i+1}/{len(prompts)} | Attempt {attempt+1}: {prompt}")
                     try:
-                        # Professional Prompt Enhancement
-                        refined_prompt = f"{prompt}, isolated on white background, professional sticker art, high contrast, clean edges, 300 dpi"
-                        api_url = f"https://pollinations.ai/p/{refined_prompt.replace(' ', '%20')}"
+                        # Random seed ekleyerek sunucuyu taze görsel üretmeye zorluyoruz
+                        seed = random.randint(1, 999999)
+                        refined_prompt = quote(f"{prompt}, sticker style, white background, high resolution, clean edges")
+                        api_url = f"https://pollinations.ai/p/{refined_prompt}?seed={seed}&width=1024&height=1024&nologo=true"
                         
-                        response = requests.get(api_url, timeout=40)
+                        response = requests.get(api_url, timeout=30)
                         
-                        # Check if response is actually an image
                         if response.status_code == 200 and 'image' in response.headers.get('content-type', ''):
                             image_data = response.content
                             break
+                        else:
+                            time.sleep(3) # Sunucuya nefes aldır
                     except Exception:
-                        time.sleep(2)
+                        time.sleep(3)
                 
                 if image_data:
                     try:
-                        # Background Removal
                         status_box.info(f"Removing Background: {prompt}")
                         input_img = Image.open(io.BytesIO(image_data))
                         output_img = remove(input_img)
-                        
-                        # Clean Preview
-                        st.image(output_img, caption=f"Result: {prompt}", width=300)
-                        
+                        st.image(output_img, caption=f"Result: {prompt}", width=400)
                     except Exception as e:
                         st.error(f"Post-processing error for: {prompt}")
                 else:
-                    st.error(f"Generation failed after multiple attempts: {prompt}")
+                    st.error(f"Generation failed: {prompt}. The AI server is busy, please try again later.")
 
-            status_box.success("Batch processing complete.")
+            status_box.success("Processing complete.")
