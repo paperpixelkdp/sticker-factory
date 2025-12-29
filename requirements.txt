@@ -3,3 +3,5 @@ requests
 rembg
 Pillow
 numpy
+onnxruntime
+opencv-python-headless
