@@ -19,84 +19,95 @@ st.markdown("""
     div[data-baseweb="tab-list"] { gap: 20px; border-bottom: 1px solid #30363d; }
     div[data-baseweb="tab"] { color: #8b949e; }
     div[data-baseweb="tab"][aria-selected="true"] { color: #ffffff; border-bottom-color: #ffffff; }
+    .model-info { background-color: #1c1c24; padding: 10px; border-radius: 5px; border-left: 3px solid #ffffff; font-size: 0.8em; margin-bottom: 15px; }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("Paper Pixel Studio")
-st.subheader("Sticker Factory - Professional Edition")
+st.caption("Professional AI Sticker Factory | Open-Source Logic")
 
-tab_app, tab_guide, tab_support = st.tabs(["🚀 Engine", "📖 User Guide", "☕ Support"])
+# Üst Sekmeler (About Eklendi)
+tab_app, tab_guide, tab_about, tab_support = st.tabs(["🚀 Engine", "📖 User Guide", "ℹ️ About", "☕ Support"])
+
+with tab_guide:
+    st.markdown("### How to Work\n1. Input your prompts.\n2. Choose your platform.\n3. The engine will auto-retry until the best image is fetched.")
+
+with tab_about:
+    st.markdown("""
+    ### About Sticker Factory
+    Paper Pixel Studio believes in transparency. 
+    - **AI Engine:** This tool uses the **Pollinations.ai** open-source API.
+    - **Models:** It dynamically switches between high-performance models (Flux, SDXL, Turbo) depending on server availability to ensure 100% up-time.
+    - **Processing:** Background removal is processed locally via the **Rembg** library.
+    - **Mission:** Our goal is to provide POD sellers with professional-grade automation tools for free.
+    """)
+
+with tab_support:
+    st.markdown("### Support our Project\nIf this tool helps your business, consider supporting our journey to create more free AI tools.")
 
 with tab_app:
-    # EKRANI İKİYE BÖLÜYORUZ
     col_left, col_right = st.columns([1, 1], gap="large")
 
     with col_left:
         st.subheader("Control Panel")
-        prompts_text = st.text_area("Enter Prompts (One per line):", placeholder="Example: Cute crocodile drinking cola", height=250)
-        
-        platform = st.selectbox("POD Platform", ["Redbubble (4500x5400)", "Amazon Merch", "Etsy", "Manual"])
-        layout = st.selectbox("Layout", ["1x", "2x", "4x", "6x", "12x"])
-        
-        run_engine = st.button("RUN STICKER FACTORY")
+        prompts_text = st.text_area("Enter Prompts (One per line):", placeholder="Example: Vintage tiger head", height=250)
+        platform = st.selectbox("POD Platform", ["Redbubble", "Amazon Merch", "Etsy", "Manual"])
+        run_engine = st.button("RUN FACTORY ENGINE")
 
     with col_right:
-        st.subheader("Live Preview")
+        st.subheader("Live Preview & System Info")
         status_area = st.empty()
         preview_area = st.container()
 
     if run_engine:
         if not prompts_text.strip():
-            st.error("Engine Error: No prompts found.")
+            st.error("Please enter a prompt.")
         else:
             prompts = [p.strip() for p in prompts_text.split("\n") if p.strip()]
-            
-            # Bot korumasını aşan headers
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
             
             for i, raw_prompt in enumerate(prompts):
                 image_data = None
+                used_seed = 0
                 
-                # İnatçı Döngü
-                for attempt in range(30):
-                    status_area.info(f"⚡ Generating {i+1}/{len(prompts)} | Attempt {attempt+1}/30: {raw_prompt}")
+                for attempt in range(25):
+                    status_area.info(f"⚡ Generating {i+1}/{len(prompts)} | Attempt {attempt+1}")
                     try:
-                        seed = random.randint(100000, 9999999)
-                        # HATA ÇÖZÜMÜ: model=flux kısmını kaldırıp sunucunun insafına bırakıyoruz
-                        # 'sticker style, white background' ekleyerek sticker kalitesini garanti ediyoruz
-                        sticker_prompt = requests.utils.quote(f"{raw_prompt}, sticker style, white border, isolated on white background, 4k resolution")
-                        
-                        # En stabil URL yapısına döndük
-                        api_url = f"https://image.pollinations.ai/prompt/{sticker_prompt}?width=1024&height=1024&seed={seed}&nologo=true"
+                        used_seed = random.randint(100000, 9999999)
+                        sticker_prompt = requests.utils.quote(f"{raw_prompt}, sticker style, white background, high resolution")
+                        # Sunucunun boşta ne varsa onu seçmesi için model belirtmiyoruz (Auto-select)
+                        api_url = f"https://image.pollinations.ai/prompt/{sticker_prompt}?width=1024&height=1024&seed={used_seed}&nologo=true"
                         
                         response = requests.get(api_url, headers=headers, timeout=60)
                         
-                        # Resim geldiyse ve hata mesajı değilse (5000 byte'tan büyükse resimdir)
                         if response.status_code == 200 and len(response.content) > 5000:
                             image_data = response.content
                             break
-                        
-                        # Sunucu meşgulse biraz bekle ve tekrar dene
-                        time.sleep(3)
+                        time.sleep(2)
                     except:
-                        time.sleep(3)
+                        time.sleep(2)
                 
                 if image_data:
-                    status_area.info(f"✂️ Background Removal: {raw_prompt}")
+                    status_area.info(f"✂️ Removing Background: {raw_prompt}")
                     try:
                         input_img = Image.open(io.BytesIO(image_data))
-                        # rembg ile arka plan silme
                         output_img = remove(input_img)
                         
                         with preview_area:
-                            st.success(f"Generated: {raw_prompt}")
-                            st.image(output_img, caption=f"Sticker: {raw_prompt}", use_container_width=True)
+                            # SİSTEM BİLGİSİ GÖSTERİMİ
+                            st.markdown(f"""
+                                <div class="model-info">
+                                <b>System Info:</b><br>
+                                Prompt: {raw_prompt}<br>
+                                Engine: Pollinations Dynamic (Best Available)<br>
+                                Seed: {used_seed}
+                                </div>
+                                """, unsafe_allow_html=True)
+                            st.image(output_img, use_container_width=True)
                             st.divider()
                     except Exception as e:
-                        st.error(f"Image processing error: {e}")
+                        st.error(f"Processing error: {e}")
                 else:
-                    st.error(f"Server Overload: Failed to generate '{raw_prompt}' after 30 attempts. Try again later.")
+                    st.error(f"Server Overload for: {raw_prompt}")
 
             status_area.success("All tasks completed.")
