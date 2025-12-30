@@ -14,9 +14,9 @@ st.set_page_config(page_title="Paper Pixel | Sticker Cloud", layout="wide", init
 
 # Secrets Kontrolü (GÜVENLİK)
 if "HF_TOKEN" in st.secrets:
-    HF_TOKEN = st.secrets["HF_TOKEN"]
+    HF_TOKEN = st.secrets["HF_TOKEN"].strip() # Boşlukları otomatik temizler
 else:
-    st.error("⚠️ HF_TOKEN is missing in Streamlit Secrets! Please add it.")
+    st.error("⚠️ HF_TOKEN is missing in Streamlit Secrets!")
     st.stop()
 
 # Model Havuzu
@@ -54,32 +54,28 @@ def add_sticker_outline(img):
 def generate_image(prompt, status_placeholder):
     refined_prompt = f"sticker design of {prompt}, white background, vector art, die-cut style, high contrast, sharp edges"
     
-    for attempt in range(2): # Toplam 2 tur
+    # 20 saniyelik inatçı döngü
+    for attempt in range(2): # 2 Tur
         for model_id in MODEL_POOL:
             status_placeholder.markdown(f"<p class='status-log'>🔄 Trying Model: {model_id.split('/')[-1]}...</p>", unsafe_allow_html=True)
             try:
                 client = InferenceClient(model=model_id, token=HF_TOKEN)
-                # İnatçı Bekleme: Sunucu uyanana kadar beklemesini istiyoruz
                 image = client.text_to_image(refined_prompt)
                 return image
             except Exception as e:
-                # Hatayı kullanıcıya gösterelim ki ne olduğunu anlayalım
                 error_msg = str(e)
                 if "401" in error_msg:
-                    status_placeholder.markdown(f"<p class='error-log'>❌ Token Invalid (401)</p>", unsafe_allow_html=True)
-                elif "429" in error_msg:
-                    status_placeholder.markdown(f"<p class='error-log'>❌ Rate Limit (429)</p>", unsafe_allow_html=True)
-                elif "503" in error_msg:
-                    status_placeholder.markdown(f"<p class='status-log'>⏳ Server Warming Up (503)...</p>", unsafe_allow_html=True)
-                else:
-                    status_placeholder.markdown(f"<p class='error-log'>❌ Error: {error_msg[:50]}...</p>", unsafe_allow_html=True)
-                time.sleep(2)
+                    status_placeholder.markdown(f"<p class='error-log'>❌ ERROR: YOUR TOKEN IS INVALID (401). Check Secrets!</p>", unsafe_allow_html=True)
+                    st.stop() # Yanlış şifreyle denemeye devam etme
+                
+                status_placeholder.markdown(f"<p class='error-log'>⚠️ Busy. Waiting 20 seconds for next attempt...</p>", unsafe_allow_html=True)
+                time.sleep(20) # Ustamın istediği 20 saniyelik mola
                 continue 
     return None
 
 # --- UI ---
 st.title("Paper Pixel Studio")
-st.subheader("Sticker Cloud Engine")
+st.subheader("Sticker Cloud Engine v2.1")
 
 tab_factory, tab_guide = st.tabs(["🏭 Factory", "📘 Guide"])
 
@@ -88,8 +84,7 @@ with tab_factory:
     
     with col_in:
         prompts_raw = st.text_area("Enter Prompts:", height=150, placeholder="Example: Cute crocodile")
-        platform = st.selectbox("Platform", ["Redbubble / Amazon", "Etsy A4", "Manual"])
-        btn_start = st.button("START PRODUCTION")
+        btn_start = st.button("START PRODUCTION LINE")
 
     with col_pre:
         monitor = st.empty()
@@ -103,26 +98,22 @@ with tab_factory:
             all_imgs = []
             
             for i, p in enumerate(prompts):
-                # 1. MOTOR: Üretim
                 raw_img = generate_image(p, monitor)
                 
                 if raw_img:
                     monitor.markdown(f"<p class='status-log'>✂️ Removing Background...</p>", unsafe_allow_html=True)
-                    # 2. MOTOR: Temizlik
                     processed_img = remove(raw_img)
-                    
-                    # 3. MOTOR: Kontur
                     final_sticker = add_sticker_outline(processed_img)
                     
-                    # 4. MOTOR: Upscale
+                    # 4x Upscale
                     w, h = final_sticker.size
                     final_sticker = final_sticker.resize((w*4, h*4), resample=Image.LANCZOS)
                     
                     all_imgs.append(final_sticker)
                     with preview_container:
-                        st.image(final_sticker, caption=f"Finished: {p}", width=250)
+                        st.image(final_sticker, caption=f"Ready: {p}", width=250)
                 else:
-                    st.error(f"Failed to manifest: {p}")
+                    st.error(f"Failed to manifest: {p} (All models failed after waiting)")
 
             if all_imgs:
                 zip_buffer = io.BytesIO()
