@@ -12,8 +12,12 @@ import zipfile
 # --- CONFIG & DÜKKAN AYARLARI ---
 st.set_page_config(page_title="Paper Pixel | Sticker Cloud", layout="wide")
 
-# Hugging Face Token (Buraya kendi tokenını yapıştır ustam)
-HF_TOKEN = "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"
+# Kodu bu şekilde değiştiriyoruz, şifreyi Streamlit'in kasasından çekeceğiz
+if "HF_TOKEN" in st.secrets:
+    HF_TOKEN = st.secrets["HF_TOKEN"]
+else:
+    st.error("Hata: HF_TOKEN bulunamadı. Lütfen Streamlit ayarlarından ekleyin.")
+    st.stop()
 
 # Model Havuzu (İnatçı Motor Listesi)
 MODEL_POOL = [
