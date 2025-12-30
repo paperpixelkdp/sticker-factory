@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import numpy as np
 import cv2
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter
 from rembg import remove
 import io
 import time
@@ -36,40 +36,53 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- JİLET GİBİ KONTUR MOTORU ---
+# --- MASTER JİLET KONTUR MOTORU ---
 
-def add_sticker_outline(img, thickness=25):
-    """Pikselliği gideren ve gri çizgileri yok eden jilet gibi beyaz kontur ekler."""
-    # PIL -> OpenCV (RGBA)
+def process_sticker_master(img, outline_thickness=40):
+    """Gri çizgileri yok eder, görseli büyütür ve pürüzsüz kontur ekler."""
+    
+    # 1. ADIM: Ham temizlik (rembg sonrası kalan gri pikselleri bıçakla kesiyoruz)
     img_array = np.array(img)
-    
-    # 1. Gri çizgileri yok etmek için Alpha kanalını temizle (Thresholding)
     alpha = img_array[:, :, 3]
+    # 127'nin altındaki tüm şeffaflıkları 0 yap (Gri pusluluğu öldürür)
     _, alpha_clean = cv2.threshold(alpha, 127, 255, cv2.THRESH_BINARY)
+    img_array[:, :, 3] = alpha_clean
+    clean_img = Image.fromarray(img_array)
+
+    # 2. ADIM: Önce Büyütme (Upscale)
+    # Konturu büyük resimde atarsak piksellik olmaz
+    w, h = clean_img.size
+    upscaled_img = clean_img.resize((w*4, h*4), resample=Image.LANCZOS)
     
-    # 2. Maskeyi dairesel bir kernel ile genişlet (Daha yuvarlak hatlar için)
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (thickness, thickness))
-    mask_dilated = cv2.dilate(alpha_clean, kernel, iterations=1)
+    # 3. ADIM: OpenCV ile Pürüzsüz Kontur
+    img_arr_big = np.array(upscaled_img)
+    alpha_big = img_arr_big[:, :, 3]
     
-    # 3. KENAR YUMUŞATMA (Anti-Aliasing Hilesi)
-    # Genişletilmiş maskeyi hafifçe bulandırıp tekrar keskinleştiriyoruz
-    mask_blurred = cv2.GaussianBlur(mask_dilated, (11, 11), 0)
-    _, mask_final = cv2.threshold(mask_blurred, 127, 255, cv2.THRESH_BINARY)
+    # Kalınlığı ölçeğe göre ayarla
+    kernel_size = outline_thickness
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
     
-    # 4. Beyaz çerçeve katmanını oluştur
-    outline = np.zeros_like(img_array)
-    outline[mask_final > 0] = [255, 255, 255, 255]
+    # Genişlet (Dilate)
+    dilated = cv2.dilate(alpha_big, kernel, iterations=1)
     
-    # 5. Orijinal resmi pürüzsüz çerçeve üzerine yapıştır
-    outline_img = Image.fromarray(outline)
-    # Orijinal resmin kenarlarındaki o pislikleri (gri pikselleri) temizlemek için maskesini de temizliyoruz
-    img_clean_alpha = Image.fromarray(cv2.bitwise_and(img_array, img_array, mask=alpha_clean))
-    outline_img.paste(img_clean_alpha, (0, 0), img_clean_alpha)
+    # 4. ADIM: Anti-Aliasing (Kenar Yumuşatma Sanatı)
+    # Büyük bir Blur atıp sonra sert bir threshold ile pürüzsüzleştiriyoruz
+    blur_amount = 15
+    smoothed = cv2.GaussianBlur(dilated, (blur_amount, blur_amount), 0)
+    _, final_mask = cv2.threshold(smoothed, 120, 255, cv2.THRESH_BINARY)
     
-    return outline_img
+    # 5. ADIM: Beyaz Katmanı Oluştur
+    outline_layer = np.zeros_like(img_arr_big)
+    outline_layer[final_mask > 0] = [255, 255, 255, 255]
+    
+    # 6. ADIM: Birleştirme
+    final_outline_img = Image.fromarray(outline_layer)
+    final_outline_img.paste(upscaled_img, (0, 0), upscaled_img)
+    
+    return final_outline_img
 
 def generate_image(prompt, status_placeholder):
-    refined_prompt = f"sticker design of {prompt}, isolated on white background, white border, vector art, high contrast, sharp edges, 300 dpi"
+    refined_prompt = f"sticker design of {prompt}, isolated on white background, white border, vector art, high contrast, 8k"
     for attempt in range(2):
         for model_id in MODEL_POOL:
             status_placeholder.markdown(f"<p class='status-log'>🔄 Node: {model_id.split('/')[-1]}...</p>", unsafe_allow_html=True)
@@ -78,7 +91,7 @@ def generate_image(prompt, status_placeholder):
                 image = client.text_to_image(refined_prompt)
                 return image
             except Exception:
-                time.sleep(10)
+                time.sleep(15)
                 continue 
     return None
 
@@ -89,8 +102,7 @@ def create_sticker_sheet(images, canvas_size=(4500, 5400), layout=6):
     cell_w, cell_h = canvas_size[0] // cols, canvas_size[1] // rows
     
     for idx, img in enumerate(images[:layout]):
-        # Sayfaya dizerken küçült ama jiletliği koru
-        img.thumbnail((cell_w - 300, cell_h - 300), Image.LANCZOS)
+        img.thumbnail((cell_w - 400, cell_h - 400), Image.LANCZOS)
         x = (idx % cols) * cell_w + (cell_w - img.width) // 2
         y = (idx // cols) * cell_h + (cell_h - img.height) // 2
         canvas.paste(img, (x, y), img)
@@ -98,7 +110,7 @@ def create_sticker_sheet(images, canvas_size=(4500, 5400), layout=6):
 
 # --- UI ---
 st.title("Paper Pixel Studio")
-st.subheader("Sticker Cloud - Jilet Mode Active 🚀")
+st.caption("Version 3.2 - Ultra Smooth Edge (Jilet) Mode")
 
 tab_factory, tab_guide = st.tabs(["🏭 Factory", "📘 Guide"])
 
@@ -106,7 +118,7 @@ with tab_factory:
     col_in, col_pre = st.columns([1, 1], gap="large")
     with col_in:
         prompts_raw = st.text_area("Enter Prompts (Max 6):", height=150)
-        platform = st.selectbox("Platform", ["Redbubble/Amazon (4500x5400)", "Etsy A4 (2480x3508)"])
+        platform = st.selectbox("Platform", ["Redbubble/Amazon (4500x5400)", "Etsy A4"])
         layout_mode = st.selectbox("Layout Mode", [1, 2, 4, 6])
         btn_start = st.button("EXECUTE PRODUCTION")
 
@@ -122,17 +134,17 @@ with tab_factory:
             for i, p in enumerate(prompts):
                 raw_img = generate_image(p, monitor)
                 if raw_img:
-                    monitor.markdown(f"<p class='status-log'>🔬 Jilet Kontur & BG Removal: {p}</p>", unsafe_allow_html=True)
-                    processed = remove(raw_img)
-                    # Buradaki kalınlığı 25 yaptım, idealdir.
-                    outlined = add_sticker_outline(processed, thickness=25)
-                    # 4x Upscale (Lanczos)
-                    w, h = outlined.size
-                    upscaled = outlined.resize((w*4, h*4), resample=Image.LANCZOS)
-                    all_stickers.append(upscaled)
+                    monitor.markdown(f"<p class='status-log'>🔬 High-Precision Processing: {p}</p>", unsafe_allow_html=True)
+                    # Arka plan sil
+                    no_bg = remove(raw_img)
+                    # Master Jilet İşlemi (Kontur ve Büyütme burada yapılıyor)
+                    final_sticker = process_sticker_master(no_bg, outline_thickness=50)
+                    
+                    all_stickers.append(final_sticker)
                     with preview_container:
-                        st.image(upscaled, caption=f"Sticker {i+1}", width=250)
-                else: st.error(f"Failed: {p}")
+                        st.image(final_sticker, caption=f"Jilet Ready: {p}", width=300)
+                else:
+                    st.error(f"Failed: {p}")
 
             if all_stickers:
                 c_size = (4500, 5400) if "Redbubble" in platform else (2480, 3508)
@@ -140,15 +152,11 @@ with tab_factory:
                 
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w") as zip_f:
-                    # Individual Stickers (Tekli şeffaf dosyalar)
                     for idx, s in enumerate(all_stickers):
-                        buf = io.BytesIO()
-                        s.save(buf, format="PNG")
+                        buf = io.BytesIO(); s.save(buf, format="PNG")
                         zip_f.writestr(f"individual/sticker_{idx+1}.png", buf.getvalue())
-                    # Ready Sheets (Baskıya hazır sayfa)
-                    buf = io.BytesIO()
-                    sheet.save(buf, format="PNG")
+                    buf = io.BytesIO(); sheet.save(buf, format="PNG")
                     zip_f.writestr(f"sheets/full_sheet.png", buf.getvalue())
                 
                 st.success("Production Finished!")
-                st.download_button("📥 DOWNLOAD PRODUCTION PACK (ZIP)", zip_buffer.getvalue(), "PaperPixel_Pack.zip", "application/zip")
+                st.download_button("📥 DOWNLOAD JİLET PACK (ZIP)", zip_buffer.getvalue(), "Jilet_Sticker_Pack.zip", "application/zip")
