@@ -12,7 +12,7 @@ import ads_manager
 # --- CONFIG ---
 st.set_page_config(page_title="Paper Pixel | Sticker Factory", layout="wide", initial_sidebar_state="collapsed")
 
-# Secrets Check
+# Secrets Kontrolü
 if "HF_TOKEN" in st.secrets:
     HF_TOKEN = st.secrets["HF_TOKEN"].strip()
 else:
@@ -21,6 +21,7 @@ else:
 
 # --- AUTO-DOWNLOAD JAVASCRIPT ---
 def trigger_auto_download(bin_data, file_name):
+    """İşlem bittiğinde dosyayı otomatik indirmek için JS tetikleyici."""
     b64 = base64.b64encode(bin_data).decode()
     js_code = f"""
         <script>
@@ -34,13 +35,16 @@ def trigger_auto_download(bin_data, file_name):
     """
     st.markdown(js_code, unsafe_allow_html=True)
 
-# --- ULTRA PROFESSIONAL CSS (v13.0 - FULL WIDTH ENFORCED) ---
+# --- ULTRA PROFESSIONAL CSS (v14.0 - DARK THEME HARMONY) ---
 st.markdown("""
     <style>
+    /* Ana Arka Plan */
     .main { background-color: #0e1117; color: #ffffff; }
-    .centered-title { text-align: center; margin-bottom: 30px; font-weight: 800; font-size: 2.8em; color: #ffffff; }
+    
+    /* BAŞLIK */
+    .centered-title { text-align: center; margin-bottom: 30px; font-weight: 800; font-size: 2.8em; color: #ffffff; letter-spacing: -1px; }
 
-    /* SEKMELER (TABS) - HEYBETLİ VE TAM GENİŞLİK */
+    /* SEKMELER (TABS) - HEYBETLİ */
     div[data-baseweb="tab-list"] { display: flex; justify-content: center; width: 100%; gap: 10px; }
     button[data-baseweb="tab"] {
         flex: 1; height: 80px !important;
@@ -60,25 +64,28 @@ st.markdown("""
     }
     .stTextArea textarea::placeholder { font-style: italic; opacity: 0.5; }
 
-    /* RUN FACTORY BUTONU - BOYDAN BOYA (FULL WIDTH) */
+    /* RUN FACTORY BUTONU - BOYDAN BOYA VE TEMAYA UYUMLU */
     .stButton { width: 100% !important; }
     .stButton > button {
-        width: 100% !important; /* Butonu boydan boya uzat */
+        width: 100% !important;
         height: 5em !important;
         border-radius: 15px !important;
         font-size: 1.5em !important;
         font-weight: 900 !important;
         text-transform: uppercase;
-        background-color: #ffffff !important;
-        color: #000000 !important;
-        border: none !important;
+        background-color: #262730 !important; /* KOYU TEMA RENGİ */
+        color: #ffffff !important;             /* BEYAZ YAZI */
+        border: 1px solid #464646 !important;
         margin-top: 20px !important;
         letter-spacing: 2px;
         transition: 0.3s ease-in-out;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
     }
     .stButton > button:hover {
-        background-color: #f0f0f0 !important;
-        transform: scale(1.01);
+        background-color: #3e404b !important; /* HOVER DURUMUNDA HAFİF AÇILIR */
+        border: 1px solid #ffffff !important;
+        transform: scale(1.005);
+        box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.5);
     }
 
     /* Reklam Alanları */
@@ -87,7 +94,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- ANA DÜZEN (1-5-1) ---
+# --- ANA DÜZEN (1-5-1 Reklam Yerleşimi) ---
 left_col, main_col, right_col = st.columns([1, 5, 1])
 
 with left_col: ads_manager.show_left_ad()
@@ -97,10 +104,11 @@ with main_col:
     # BAŞLIK
     st.markdown('<h1 class="centered-title">PAPER PIXEL STUDIO | STICKER FACTORY</h1>', unsafe_allow_html=True)
     
+    # SEKMELER
     tab_factory, tab_guide, tab_donate = st.tabs(["🏭 FACTORY", "📘 HOW IT WORKS", "☕ DONATION"])
 
     with tab_factory:
-        # 1. Prompt Alanı (Max 12 Sınırı)
+        # 1. Prompt Kutusu (Max 12 Sınırı)
         placeholder_txt = "Enter up to 12 prompts (one per line). Click here to start typing..."
         prompts_raw = st.text_area("FACTORY_INPUT", height=250, placeholder=placeholder_txt, label_visibility="collapsed")
 
@@ -114,11 +122,10 @@ with main_col:
         with set_col2:
             layout_mode = st.selectbox("LAYOUT GRID", [1, 2, 4, 6, 9, 12], index=3)
 
-        # 3. RUN FACTORY BUTONU (BOYDAN BOYA)
-        # Hiçbir kolonun içine koymuyoruz, direkt main_col genişliğinde!
+        # 3. RUN FACTORY BUTONU (BOYDAN BOYA & DARK)
         run_factory = st.button("RUN FACTORY", use_container_width=True)
 
-        # --- ÜRETİM MOTORU ---
+        # --- MOTOR ÇALIŞMA MANTIĞI ---
         if run_factory:
             prompts = [p.strip() for p in prompts_raw.split("\n") if p.strip()]
             if not prompts:
@@ -144,9 +151,9 @@ with main_col:
                         
                         status.update(label="✅ PRODUCTION COMPLETE! EXPORTING...", state="complete", expanded=False)
                         
-                        # OTOMATİK İNDİRME
+                        # OTOMATİK İNDİRME TETİKLENİYOR
                         trigger_auto_download(zip_bytes, "PaperPixel_Production_Pack.zip")
-                        st.success(f"Success! {all_stickers_count} stickers exported to your downloads folder.")
+                        st.success(f"Success! {all_stickers_count} stickers exported to your downloads.")
 
     with tab_guide:
         show_guide()
@@ -154,6 +161,6 @@ with main_col:
     with tab_donate:
         show_donation()
 
-# FOOTER
+# FOOTER REKLAM
 st.markdown("<br>", unsafe_allow_html=True)
 ads_manager.show_footer_ad()
