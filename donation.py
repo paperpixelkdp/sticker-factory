@@ -3,9 +3,11 @@ import streamlit as st
 def show_donation():
     st.title("☕ Support Paper Pixel Studio")
     st.markdown("""
-    Paper Pixel Studio is committed to providing high-end AI automation tools for the Print-on-Demand community **100% free of charge**. 
+    Paper Pixel Studio is committed to providing professional AI automation tools for the POD community **100% free of charge**. 
     
-    Maintaining high-performance AI engines and high-res processing requires significant computing costs. If this tool saved you time or helped your business, consider supporting our journey!
+    While we leverage open-source AI clusters and free APIs to keep this tool accessible to everyone, maintaining a high-speed production line, research, and continuous system optimization requires significant time and effort. 
+    
+    If our "Jilet" technology saved you hours of work or helped you scale your business, consider supporting us to keep these tools running and to fund even more powerful future updates!
     """)
 
     st.divider()
