@@ -70,9 +70,15 @@ st.markdown("""
     
     .stButton > button:hover { transform: scale(1.005); opacity: 0.9; }
 
-    /* Reklam Placeholder */
-    .ad-sidebar { min-height: 80vh; display: flex; align-items: center; justify-content: center; border: 1px dashed #30363d; color: #30363d; font-size: 0.8em; }
-    .ad-footer { height: 100px; margin-top: 50px; border: 1px dashed #30363d; display: flex; align-items: center; justify-content: center; color: #30363d; }
+    /* Reklam Yan Sütun Ayarları */
+    [data-testid="column"]:nth-of-type(1) { padding-right: 10px; } /* Sol Sütun */
+    [data-testid="column"]:nth-of-type(3) { padding-left: 10px; }  /* Sağ Sütun */
+    
+    .ad-sidebar-container img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
     </style>
     """, unsafe_allow_html=True)
 
