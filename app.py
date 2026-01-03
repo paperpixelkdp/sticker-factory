@@ -9,8 +9,12 @@ from donation import show_donation
 import ads_manager
 
 # --- CONFIG ---
-st.set_page_config(page_title="Paper Pixel | Sticker Factory", layout="wide", initial_sidebar_state="collapsed")
-
+st.set_page_config(
+    page_title="Paper Pixel | Sticker Factory", 
+    page_icon="🏭", # Buraya sticker ikonu veya logonun linkini koyabilirsin
+    layout="wide", 
+    initial_sidebar_state="collapsed"
+)
 # Secrets Check
 if "HF_TOKEN" in st.secrets:
     HF_TOKEN = st.secrets["HF_TOKEN"].strip()
