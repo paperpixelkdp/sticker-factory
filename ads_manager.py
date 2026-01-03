@@ -4,8 +4,8 @@ import streamlit as st
 RB_LINK = "https://www.redbubble.com/people/paperpixelkdp/shop?asc=u"
 
 # RAW (Ham) Görüntü Linkleri
-LEFT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/SHOP%20NOW.png"
-RIGHT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/SHOP%20NOW.png"
+LEFT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/banner_1.png"
+RIGHT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/banner_2.png"
 
 ADS_CONFIG = {
     "left_sidebar": [
