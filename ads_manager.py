@@ -7,11 +7,11 @@ RB_LINK = "https://www.redbubble.com/people/paperpixelkdp/shop?asc=u"
 ADS_CONFIG = {
     "left_sidebar": [
         # Buraya istediğin kadar görsel ekleyebilirsin, alt alta sıralanır.
-        {"image_url": "https://placehold.co/300x600/161b22/ffffff?text=My+Redbubble+Art+1", "link": RB_LINK},
+        {"image_url": "https://github.com/paperpixelkdp/sticker-factory/blob/main/assets/SHOP%20NOW%20(1).png", "link": RB_LINK},
         # {"image_url": "İKİNCİ_RESİM_LİNKİ", "link": RB_LINK}, 
     ],
     "right_sidebar": [
-        {"image_url": "https://placehold.co/300x600/161b22/ffffff?text=My+Redbubble+Art+2", "link": RB_LINK},
+        {"image_url": "https://github.com/paperpixelkdp/sticker-factory/blob/main/assets/SHOP%20NOW.png", "link": RB_LINK},
     ]
 }
 
