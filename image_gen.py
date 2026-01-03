@@ -1,56 +1,49 @@
 import time
 from huggingface_hub import InferenceClient
 
-# Model Havuzu (En stabil olanlar üstte)
+# En hızlı ve en çok kullanılan modelleri sıraladık
 MODEL_POOL = [
+    "stabilityai/sd-turbo",
     "runwayml/stable-diffusion-v1-5",
     "prompthero/openjourney",
     "CompVis/stable-diffusion-v1-4",
-    "stabilityai/stable-diffusion-xl-base-1.0",
-    "stabilityai/sd-turbo"
+    "stabilityai/stable-diffusion-xl-base-1.0"
 ]
 
 def generate_sticker_image(prompt, hf_token, status_placeholder):
     """
-    HUMAN MODE: Bir insan gibi sabırla bekler ve modelleri zorlar.
+    Kullanıcının yazdığı promptu HİÇBİR DEĞİŞİKLİK YAPMADAN gönderir.
     """
-    refined_prompt = f"sticker design of {prompt}, isolated on white background, white border, vector art, high contrast, sharp edges, 4k"
+    # Ustamın isteği üzerine: Prompt olduğu gibi gidiyor (RAW)
+    raw_prompt = prompt 
     
-    # Her bir model için döngü
     for model_id in MODEL_POOL:
         model_name = model_id.split('/')[-1]
         
-        # AYNI MODELDE 5 KEZ DENEME (Ustamın İsteği)
         for attempt in range(1, 6):
-            status_placeholder.info(f"🕵️ **Human Mode:** Trying `{model_name}` | Attempt {attempt}/5 for: '{prompt}'")
+            status_placeholder.info(f"🕵️ **Human Mode:** Trying `{model_name}` | Attempt {attempt}/5")
             
             try:
-                client = InferenceClient(model=model_id, token=hf_token)
-                image = client.text_to_image(refined_prompt)
+                client = InferenceClient(model=model_id, token=hf_token, timeout=60)
+                image = client.text_to_image(raw_prompt)
                 
                 if image:
-                    status_placeholder.success(f"✅ Success! Image fetched from `{model_name}`")
-                    return image # Görseli bulduğumuz an fonksiyondan çıkarız
+                    status_placeholder.success(f"✅ Success with `{model_name}`")
+                    return image
             
             except Exception as e:
                 err = str(e)
-                
-                # Eğer Token hatalıysa hiç bekleme (401)
+                # Token hatalıysa hemen durdur
                 if "401" in err:
-                    status_placeholder.error("❌ Critical: Token Invalid. Check Secrets.")
+                    status_placeholder.error("❌ TOKEN HATALI! Lütfen Hugging Face Token'ınızı kontrol edin.")
                     return "TOKEN_ERROR"
                 
-                # Model meşgulse veya yükleniyorsa (503 / 429 vb.)
-                # Ustamın istediği 20 saniyelik "İnsan Sabrı" molası
+                # Model yükleniyorsa (503) veya limit dolduysa (429)
                 if attempt < 5:
-                    status_placeholder.warning(f"⏳ `{model_name}` is busy or sleeping. Mimicking human wait (20s)...")
+                    status_placeholder.warning(f"⏳ `{model_name}` is loading or busy. (Error: {err[:40]}...) Waiting 20s.")
                     time.sleep(20)
                 else:
-                    # 5 deneme de bittiyse bir sonraki modele geçeceğiz
-                    status_placeholder.error(f"❌ `{model_name}` failed after 5 attempts. Switching to next model...")
-                    time.sleep(5) 
-                    break # İçteki deneme döngüsünden çıkar, bir sonraki modele geçer
-
-    # Tüm modeller ve tüm denemeler bittiyse
-    status_placeholder.error(f"💀 All nodes exhausted. Could not generate: '{prompt}'")
+                    status_placeholder.error(f"❌ `{model_name}` failed after 5 attempts.")
+                    break # Diğer modele geç
+                    
     return None
