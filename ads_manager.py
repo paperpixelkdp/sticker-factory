@@ -1,22 +1,22 @@
 import streamlit as st
 
 # --- REKLAM AYARLARI ---
-# Redbubble Mağazan: https://www.redbubble.com/people/paperpixelkdp/shop?asc=u
 RB_LINK = "https://www.redbubble.com/people/paperpixelkdp/shop?asc=u"
+
+# RAW (Ham) Görüntü Linkleri
+LEFT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/SHOP%20NOW.png"
+RIGHT_AD_RAW = "https://raw.githubusercontent.com/paperpixelkdp/sticker-factory/main/assets/SHOP%20NOW.png"
 
 ADS_CONFIG = {
     "left_sidebar": [
-        # Buraya istediğin kadar görsel ekleyebilirsin, alt alta sıralanır.
-        {"image_url": "https://github.com/paperpixelkdp/sticker-factory/blob/main/assets/SHOP%20NOW%20(1).png", "link": RB_LINK},
-        # {"image_url": "İKİNCİ_RESİM_LİNKİ", "link": RB_LINK}, 
+        {"image_url": LEFT_AD_RAW, "link": RB_LINK},
     ],
     "right_sidebar": [
-        {"image_url": "https://github.com/paperpixelkdp/sticker-factory/blob/main/assets/SHOP%20NOW.png", "link": RB_LINK},
+        {"image_url": RIGHT_AD_RAW, "link": RB_LINK},
     ]
 }
 
 def show_left_ad():
-    """Sol reklam alanında görselleri dikey (alt alta) gösterir."""
     for ad in ADS_CONFIG["left_sidebar"]:
         st.markdown(f"""
             <div style="margin-bottom: 20px;">
@@ -27,7 +27,6 @@ def show_left_ad():
         """, unsafe_allow_html=True)
 
 def show_right_ad():
-    """Sağ reklam alanında görselleri dikey (alt alta) gösterir."""
     for ad in ADS_CONFIG["right_sidebar"]:
         st.markdown(f"""
             <div style="margin-bottom: 20px;">
@@ -38,5 +37,4 @@ def show_right_ad():
         """, unsafe_allow_html=True)
 
 def show_footer_ad():
-    """Kullanıcı istemediği için boş bırakıldı."""
     pass
