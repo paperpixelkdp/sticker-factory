@@ -4,184 +4,179 @@ import time
 from image_gen import generate_sticker_image
 from image_processor import process_sticker
 from layout_manager import create_custom_sheets, export_to_zip
+from guide import show_guide # Yeni modül
+from donation import show_donation # Yeni modül
 
-# --- SAYFA AYARLARI ---
+# --- CONFIG ---
 st.set_page_config(page_title="Paper Pixel | Sticker Factory", layout="wide", initial_sidebar_state="collapsed")
 
-# Secrets Kontrolü
+# Secrets
 if "HF_TOKEN" in st.secrets:
     HF_TOKEN = st.secrets["HF_TOKEN"].strip()
 else:
     st.error("⚠️ HF_TOKEN missing!")
     st.stop()
 
-# --- PROFESYONEL CSS (v6.0 Güncellemeleri) ---
+# --- ULTRA PROFESSIONAL CSS ---
 st.markdown("""
     <style>
     /* Ana Arka Plan */
     .main { background-color: #0e1117; color: #ffffff; }
     
-    /* SEKME AYARLARI (Büyütülmüş ve Ortalanmış) */
+    /* SEKME AYARLARI (Heybetli ve Geniş) */
     div[data-baseweb="tab-list"] {
         display: flex;
-        justify-content: center;
+        justify-content: space-between;
         width: 100%;
-        gap: 20px;
+        gap: 10px;
     }
     div[data-baseweb="tab"] {
-        flex: 1;
+        flex: 1; /* Tüm genişliğe yay */
         text-align: center;
-        height: 60px;
-        background-color: transparent;
+        height: 70px;
+        background-color: #161b22 !important;
+        border-radius: 10px 10px 0 0;
+        margin: 0 5px;
+        border: 1px solid #30363d;
     }
     div[data-baseweb="tab"] p {
-        font-size: 1.4em !important; /* Yazıları büyüttük */
+        font-size: 1.5em !important;
         font-weight: bold;
-        color: #8b949e;
+        padding-top: 10px;
     }
-    div[data-baseweb="tab"][aria-selected="true"] p {
-        color: #ffffff !important;
+    div[data-baseweb="tab"][aria-selected="true"] {
+        background-color: #21262d !important;
+        border-bottom: 3px solid #ffffff !important;
     }
 
     /* Başlık Ortalama */
-    .centered-title { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 2.5em; color: #ffffff; }
+    .centered-title { text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 3em; color: #ffffff; }
 
-    /* PROMPT ALANI (İtalik Placeholder) */
+    /* PROMPT ALANI */
     .stTextArea textarea { 
         background-color: #161b22 !important; 
         color: #ffffff !important; 
         border: 1px solid #30363d !important; 
-        border-radius: 10px; 
-        font-size: 1.1em;
+        border-radius: 12px; 
+        font-size: 1.2em;
     }
-    .stTextArea textarea::placeholder {
-        font-style: italic;
-        opacity: 0.7;
+    .stTextArea textarea::placeholder { font-style: italic; opacity: 0.6; }
+    
+    /* SAYISAL GİRDİLER VE SELECTBOX */
+    div[data-baseweb="input"], div[data-baseweb="select"] {
+        background-color: #161b22 !important;
+        border-radius: 8px !important;
+    }
+
+    /* BUTONLAR (Devasa ve Yan Yana) */
+    .stButton > button, .stDownloadButton > button {
+        width: 100% !important;
+        height: 4.5em !important;
+        font-size: 1.3em !important;
+        border-radius: 12px !important;
+        font-weight: 2000 !important; /* En kalın yazı */
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     
-    /* BUTONLAR (Geniş ve Bitişik Görünümlü) */
-    .stButton>button {
-        width: 100%;
-        height: 4em !important;
-        font-size: 1.2em !important;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: 0.3s;
-    }
-    /* Run Factory Butonu (Beyaz) */
+    /* Run Factory (Beyaz Tema) */
     div[data-testid="stHorizontalBlock"] > div:nth-child(1) button {
         background-color: #ffffff !important;
         color: #000000 !important;
-        border: none;
+        border: none !important;
     }
-    /* Download Butonu (Koyu) */
+    /* Download (Koyu Tema) */
     div[data-testid="stHorizontalBlock"] > div:nth-child(2) button {
         background-color: #262730 !important;
         color: #ffffff !important;
-        border: 1px solid #464646;
+        border: 1px solid #464646 !important;
     }
 
     /* Reklam Alanları */
-    .ad-sidebar { min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+    .ad-sidebar { min-height: 80vh; }
     .ad-footer { height: 100px; margin-top: 50px; border-top: 1px solid #30363d; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- ANA DÜZEN ---
-left_ad, main_container, right_ad = st.columns([1, 4, 1])
-
-with left_ad:
-    st.markdown('<div class="ad-sidebar"></div>', unsafe_allow_html=True)
-
-with right_ad:
-    st.markdown('<div class="ad-sidebar"></div>', unsafe_allow_html=True)
+left_ad, main_container, right_ad = st.columns([1, 5, 1]) # İçeriği biraz daha genişlettik
 
 with main_container:
-    st.markdown('<h1 class="centered-title">Paper Pixel Studio | Sticker Factory</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="centered-title">PAPER PIXEL STUDIO</h1>', unsafe_allow_html=True)
     
-    tab_factory, tab_guide, tab_donate = st.tabs(["🏭 Factory", "📘 How To Work", "☕ Donation"])
+    tab_factory, tab_guide, tab_donate = st.tabs(["🏭 FACTORY", "📘 HOW IT WORKS", "☕ DONATION"])
 
     with tab_factory:
-        # 1. Prompt Alanı (12 Prompt Sınırı ve İtalik Placeholder)
-        placeholder_text = "Enter up to 12 prompts here (one per line). Example: \n- Cyberpunk neon cat \n- Vintage forest bear"
-        prompts_raw = st.text_area("Sticker Prompts", height=200, placeholder=placeholder_text, label_visibility="collapsed")
+        # 1. Prompt Alanı
+        placeholder_txt = "Enter up to 12 prompts here (one per line). Click here to start typing..."
+        prompts_raw = st.text_area("FACTORY_INPUT", height=250, placeholder=placeholder_txt, label_visibility="collapsed")
 
-        # 2. Settings (Manuel PX ve Layout - Yan Yana)
+        # 2. Settings (PX ve Layout)
         st.markdown("<br>", unsafe_allow_html=True)
-        col_set1, col_set2 = st.columns(2)
+        col_px, col_lay = st.columns([2, 1])
         
-        with col_set1:
-            px_col1, px_col2 = st.columns(2)
-            width = px_col1.number_input("Width (px)", value=4500, step=100)
-            height = px_col2.number_input("Height (px)", value=5400, step=100)
+        with col_px:
+            px_w, px_h = st.columns(2)
+            width = px_w.number_input("WIDTH (PX)", value=4500, step=100)
+            height = px_h.number_input("HEIGHT (PX)", value=5400, step=100)
             
-        with col_set2:
-            layout_mode = st.selectbox("Layout Mode", [1, 2, 4, 6, 9, 12], index=3)
+        with col_lay:
+            layout_mode = st.selectbox("LAYOUT GRID", [1, 2, 4, 6, 9, 12], index=3)
 
-        # 3. Butonlar (Run Factory ve Download)
+        # 3. Butonlar (Heybetli ve Bitişik)
         st.markdown("<br>", unsafe_allow_html=True)
-        col_run, col_download = st.columns(2, gap="small") # Butonları birbirine yaklaştırdık
+        col_run, col_dl = st.columns(2, gap="medium")
         
         if 'zip_data' not in st.session_state:
             st.session_state['zip_data'] = None
 
         with col_run:
-            run_factory = st.button("Run Factory")
+            run_factory = st.button("RUN FACTORY", use_container_width=True)
 
-        with col_download:
+        with col_dl:
             if st.session_state['zip_data']:
-                st.download_button(label="Download", data=st.session_state['zip_data'], file_name="PaperPixel_Pack.zip", mime="application/zip")
+                st.download_button(label="DOWNLOAD", data=st.session_state['zip_data'], file_name="PaperPixel_Pack.zip", mime="application/zip", use_container_width=True)
             else:
-                st.button("Download", disabled=True, help="Run the factory first to enable download.")
+                st.button("DOWNLOAD", disabled=True, use_container_width=True)
 
-        # --- MOTOR ÇALIŞMA MANTIĞI ---
+        # --- MOTOR MANTIĞI ---
         if run_factory:
             prompts = [p.strip() for p in prompts_raw.split("\n") if p.strip()]
-            
-            # 12 PROMPT SINIRI KONTROLÜ
             if not prompts:
                 st.error("Engine Error: No prompts detected.")
             elif len(prompts) > 12:
-                st.error("🚨 Safety Limit Exceeded: Please enter a maximum of 12 prompts.")
+                st.error("🚨 Safety Limit: Maximum 12 prompts allowed.")
             else:
-                # 4. Work Flow Alanı (Otomatik Açılan Statü Paneli)
-                with st.status("🚀 Production Line Active...", expanded=True) as status:
+                with st.status("🚀 FACTORY LINE ACTIVE...", expanded=True) as status:
                     all_processed_stickers = []
-                    
                     for i, p in enumerate(prompts):
-                        st.write(f"🔍 **Step 1:** Requesting art for '{p}'...")
+                        st.write(f"⚙️ **Processing {i+1}/{len(prompts)}:** {p}")
                         raw_img = generate_sticker_image(p, HF_TOKEN, st.empty())
                         
                         if raw_img and raw_img != "TOKEN_ERROR":
-                            st.write(f"✂️ **Step 2:** Processing background & Jilet-outline...")
                             processed_sticker = process_sticker(raw_img, outline_thickness=30)
                             all_processed_stickers.append(processed_sticker)
                         else:
-                            st.error(f"Failed to generate: {p}")
+                            st.error(f"Failed: {p}")
 
                     if all_processed_stickers:
-                        st.write("📦 **Step 3:** Packing sheets into ZIP...")
+                        st.write("📦 **Finalizing Production Pack...**")
                         final_sheets = create_custom_sheets(all_processed_stickers, width, height, layout_mode)
                         zip_bytes = export_to_zip(all_processed_stickers, final_sheets)
-                        
                         st.session_state['zip_data'] = zip_bytes
-                        status.update(label="✅ Production Complete! Shipment Ready.", state="complete", expanded=False)
+                        status.update(label="✅ PRODUCTION COMPLETE!", state="complete", expanded=False)
                         time.sleep(1)
                         st.rerun()
 
     with tab_guide:
-        st.markdown("""
-        <div style="text-align: center; font-size: 1.2em;">
-        <h3>How It Works</h3>
-        <p>1. Enter up to <b>12 prompts</b> in the text area.</p>
-        <p>2. Set your <b>Canvas Size</b> and <b>Layout</b>.</p>
-        <p>3. Click <b>Run Factory</b> to start the neural engines.</p>
-        <p>4. Once complete, your <b>Download</b> button will activate.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        show_guide() # Dışarıdan çağırdık
 
     with tab_donate:
-        st.markdown("<div style='text-align: center;'><h3>Support Paper Pixel Studio</h3><p>Help us keep these tools free! ☕</p></div>", unsafe_allow_html=True)
+        show_donation() # Dışarıdan çağırdık
 
-# --- FOOTER ---
+# Sol ve Sağ Reklam Alanları İçin Görünmez Doldurma
+with left_ad: st.markdown('<div class="ad-sidebar"></div>', unsafe_allow_html=True)
+with right_ad: st.markdown('<div class="ad-sidebar"></div>', unsafe_allow_html=True)
+
+# Footer
 st.markdown('<div class="ad-footer"></div>', unsafe_allow_html=True)
