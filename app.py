@@ -18,16 +18,16 @@ else:
     st.error("⚠️ HF_TOKEN missing!")
     st.stop()
 
-# --- CSS BALYOZU (MİLLİMETRİK AYARLAR) ---
+# --- ULTRA PROFESSIONAL CSS (v11.0 - CENTERED VERTICAL BUTTONS) ---
 st.markdown("""
     <style>
     /* Ana Arka Plan */
     .main { background-color: #0e1117; color: #ffffff; }
     
     /* BAŞLIK */
-    .centered-title { text-align: center; margin-bottom: 25px; font-weight: 800; font-size: 2.8em; color: #ffffff; letter-spacing: -1px; }
+    .centered-title { text-align: center; margin-bottom: 25px; font-weight: 800; font-size: 2.8em; color: #ffffff; }
 
-    /* SEKMELER (TABS) - HEYBETLİ VE TAM GENİŞLİK */
+    /* SEKMELER (TABS) */
     div[data-baseweb="tab-list"] {
         display: flex;
         justify-content: center;
@@ -53,34 +53,29 @@ st.markdown("""
         border-radius: 12px; 
         font-size: 1.2em;
         padding: 15px;
+        text-align: center;
     }
 
-    /* BUTON KAPSAYICI (ACTION ROW) */
-    /* Bu kısım hem normal butonu hem download butonunu %100 genişliğe zorlar */
-    div.row-widget.stButton, div.row-widget.stDownloadButton {
-        width: 100% !important;
-    }
-    
+    /* BUTONLARIN ÖZEL TASARIMI (HEYBETLİ) */
     .stButton > button, .stDownloadButton > button {
         width: 100% !important;
-        height: 4em !important;
+        height: 4.2em !important;
         border-radius: 12px !important;
-        font-size: 1.2em !important;
+        font-size: 1.1em !important;
         font-weight: 800 !important;
         text-transform: uppercase;
-        margin: 0 !important;
+        margin-top: 10px !important;
     }
-
-    /* Run Factory Renkleri */
-    div[data-testid="column"]:nth-of-type(1) .stButton > button {
+    
+    /* Run Factory (Beyaz) */
+    .btn-run button {
         background-color: #ffffff !important;
         color: #000000 !important;
         border: none !important;
     }
 
-    /* Download Renkleri */
-    div[data-testid="column"]:nth-of-type(2) .stDownloadButton > button, 
-    div[data-testid="column"]:nth-of-type(2) .stButton > button {
+    /* Download (Koyu) */
+    .btn-download button {
         background-color: #262730 !important;
         color: #ffffff !important;
         border: 1px solid #464646 !important;
@@ -122,21 +117,34 @@ with main_col:
         with set_col2:
             layout_mode = st.selectbox("LAYOUT GRID", [1, 2, 4, 6, 9, 12], index=3)
 
-        # 3. Butonlar Satırı (İşte burası jilet gibi olacak)
+        # 3. BUTONLAR (DİKEY, ORTALANMIŞ, 1/3 GENİŞLİK)
         st.markdown("<br>", unsafe_allow_html=True)
-        btn_col1, btn_col2 = st.columns(2, gap="medium")
         
+        # 3 Kolon oluşturuyoruz: [Yan Boşluk, Buton Alanı, Yan Boşluk]
+        # [1.5, 1, 1.5] oranı butonun yaklaşık 1/3 genişlikte ve ortada olmasını sağlar
+        btn_layout_col1, btn_layout_col2, btn_layout_col3 = st.columns([1.5, 1, 1.5])
+
         if 'zip_data' not in st.session_state:
             st.session_state['zip_data'] = None
 
-        with btn_col1:
-            run_factory = st.button("RUN FACTORY", use_container_width=True)
+        with btn_layout_col2:
+            # RUN FACTORY BUTONU
+            st.markdown('<div class="btn-run">', unsafe_allow_html=True)
+            run_factory = st.button("RUN FACTORY")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        with btn_col2:
+            # DOWNLOAD BUTONU (Hemen Altında)
+            st.markdown('<div class="btn-download">', unsafe_allow_html=True)
             if st.session_state['zip_data']:
-                st.download_button(label="DOWNLOAD", data=st.session_state['zip_data'], file_name="PaperPixel_Pack.zip", mime="application/zip", use_container_width=True)
+                st.download_button(
+                    label="DOWNLOAD", 
+                    data=st.session_state['zip_data'], 
+                    file_name="PaperPixel_Pack.zip", 
+                    mime="application/zip"
+                )
             else:
-                st.button("DOWNLOAD", disabled=True, use_container_width=True)
+                st.button("DOWNLOAD", disabled=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # --- MOTOR ---
         if run_factory:
